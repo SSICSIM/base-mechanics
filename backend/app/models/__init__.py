@@ -1,2 +1,1 @@
-# Import model modules here so Alembic autogenerate can see them, e.g.:
-#   from app.models.widget import Widget  # noqa: F401
+from app.models.crisis_note import Character, CrisisPeriod, CrisisNote, StaffNote  # noqa: F401

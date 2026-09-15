@@ -23,3 +23,6 @@ docker compose up
 
 - Frontend: http://localhost:3000
 - Backend: http://localhost:8000 (docs at `/docs`, health at `/api/health`)
+
+See [`docs/environment-setup.md`](docs/environment-setup.md) for what each
+`.env` variable does, how requests are routed, and common setup mistakes.
