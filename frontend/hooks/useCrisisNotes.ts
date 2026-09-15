@@ -34,6 +34,7 @@ export function useUpdateNote() {
       crisisNotesService.update(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["notes"] });
+      qc.invalidateQueries({ queryKey: ["analytics"] });
       toast.success("Note updated.");
     },
     onError: (err: Error) => toast.error(err.message || "Failed to update note."),

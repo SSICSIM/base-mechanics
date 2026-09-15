@@ -2,6 +2,16 @@
 
 import { useRef, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,6 +28,7 @@ import {
   useDeleteCharacter,
   useBulkUploadCharacters,
 } from "@/hooks/useCharacters";
+import type { CharacterResponse } from "@/types/api";
 
 interface Props {
   open: boolean;
@@ -26,11 +37,12 @@ interface Props {
 
 export function CharacterManagerDialog({ open, onOpenChange }: Props) {
   const [name, setName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<CharacterResponse | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: characters, isLoading } = useCharacters();
   const { mutate: create, isPending: creating } = useCreateCharacter();
-  const { mutate: remove } = useDeleteCharacter();
+  const { mutate: remove, isPending: deleting } = useDeleteCharacter();
   const { mutate: bulkUpload, isPending: uploading } = useBulkUploadCharacters();
 
   function handleAdd(e: React.FormEvent) {
@@ -46,8 +58,9 @@ export function CharacterManagerDialog({ open, onOpenChange }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Manage Characters</DialogTitle>
         </DialogHeader>
@@ -73,7 +86,7 @@ export function CharacterManagerDialog({ open, onOpenChange }: Props) {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                onClick={() => remove(c.id)}
+                onClick={() => setDeleteTarget(c)}
                 aria-label={`Remove ${c.name}`}
               >
                 <Trash2 className="h-4 w-4" />
@@ -115,7 +128,33 @@ export function CharacterManagerDialog({ open, onOpenChange }: Props) {
             {uploading ? "Importing…" : "Import from .xlsx or .json"}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove "{deleteTarget?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes the character and every crisis note ever written about
+              them — including notes in archived periods. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={() => {
+                if (deleteTarget) remove(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

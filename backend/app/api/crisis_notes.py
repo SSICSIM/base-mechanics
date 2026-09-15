@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -101,6 +102,15 @@ def create_note(body: CrisisNoteCreate, db: Session = Depends(get_db)) -> Crisis
     if not active_period:
         raise HTTPException(status_code=422, detail="No active period. Create a period first.")
 
+    if body.period_id is not None and body.period_id != active_period.id:
+        # The client's view of the active period is stale (e.g. it was
+        # archived while they had the form open) — refuse rather than
+        # silently filing the note under a different period than they saw.
+        raise HTTPException(
+            status_code=409,
+            detail="The active period has changed since you opened this form. Refresh and try again.",
+        )
+
     character = db.get(Character, body.character_id)
     if not character:
         raise HTTPException(status_code=404, detail="Character not found.")
@@ -125,9 +135,21 @@ def update_note(note_id: int, body: CrisisNoteUpdate, db: Session = Depends(get_
     note = db.get(CrisisNote, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found.")
-    for field, value in body.model_dump(exclude_unset=True).items():
+
+    updates = body.model_dump(exclude_unset=True)
+    if "character_id" in updates:
+        character = db.get(Character, updates["character_id"])
+        if not character:
+            raise HTTPException(status_code=404, detail="Character not found.")
+
+    for field, value in updates.items():
         setattr(note, field, value)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Could not save this note — check the submitted values.")
     db.refresh(note)
     return note
 

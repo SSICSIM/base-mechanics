@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -42,7 +43,16 @@ def create_period(body: CrisisPeriodCreate, db: Session = Depends(get_db)) -> Cr
         )
     period = CrisisPeriod(name=body.name, is_active=True)
     db.add(period)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another request created an active period between our check and
+        # commit; the partial unique index on is_active caught it.
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="An active period already exists. Archive it before creating a new one.",
+        )
     db.refresh(period)
     return period
 

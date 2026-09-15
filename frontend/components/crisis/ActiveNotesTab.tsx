@@ -76,7 +76,7 @@ export function ActiveNotesTab({ activePeriodId }: Props) {
 
       <StaffNotesPanel periodId={activePeriodId} />
 
-      <AddNoteDialog open={addOpen} onOpenChange={setAddOpen} />
+      <AddNoteDialog open={addOpen} onOpenChange={setAddOpen} activePeriodId={activePeriodId} />
       <EditNoteSheet note={editNote} onOpenChange={(open) => !open && setEditNote(null)} />
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,11 +30,21 @@ export function NoteFilters({ filters, onChange }: Props) {
   const { data: characters } = useCharacters();
   const [searchInput, setSearchInput] = useState(filters.q);
 
+  // Keep the latest filters/onChange in a ref so the debounce below always
+  // merges into the current filters, not a stale snapshot from when the
+  // timer was scheduled.
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   // Debounce text search
   useEffect(() => {
-    const t = setTimeout(() => onChange({ ...filters, q: searchInput }), 300);
+    const t = setTimeout(
+      () => onChangeRef.current({ ...filtersRef.current, q: searchInput }),
+      300
+    );
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
   const hasFilters =

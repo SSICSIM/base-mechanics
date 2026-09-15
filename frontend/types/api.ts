@@ -52,6 +52,10 @@ export interface CrisisNoteResponse {
 
 export interface CrisisNoteCreate {
   character_id: number;
+  // The period the client expects the note to land in. The backend rejects
+  // the submission (409) if the active period has changed since, instead of
+  // silently filing it under a different period than the user saw.
+  period_id?: number;
   title: string;
   description: string;
   crisis_staff_notes?: string;

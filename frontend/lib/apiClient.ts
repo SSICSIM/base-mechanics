@@ -1,6 +1,9 @@
-// Talks directly to the FastAPI backend. NEXT_PUBLIC_API_BASE_URL is inlined
-// into the browser bundle at build time (see .env.example).
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+// Talks to the FastAPI backend through this app's own same-origin proxy
+// (see app/api/backend/[...path]/route.ts) rather than calling the backend
+// directly from the browser. The proxy requires a signed-in session and
+// attaches the backend admin token server-side, so the token never reaches
+// the client bundle and the site password actually gates the data API too.
+const baseUrl = "/api/backend";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${baseUrl}${path}`, {

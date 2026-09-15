@@ -5,6 +5,7 @@ import json
 
 import openpyxl
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -26,7 +27,12 @@ def create_character(body: CharacterCreate, db: Session = Depends(get_db)) -> Ch
         raise HTTPException(status_code=409, detail="A character with that name already exists.")
     character = Character(name=body.name)
     db.add(character)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another request created the same name between our check and commit.
+        db.rollback()
+        raise HTTPException(status_code=409, detail="A character with that name already exists.")
     db.refresh(character)
     return character
 
@@ -41,7 +47,10 @@ async def bulk_upload_characters(
 
     filename = (file.filename or "").lower()
     if filename.endswith(".json"):
-        data = json.loads(content)
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=422, detail="That file is not valid JSON.")
         if isinstance(data, list):
             for item in data:
                 if isinstance(item, str):
@@ -49,11 +58,15 @@ async def bulk_upload_characters(
                 elif isinstance(item, dict) and "name" in item:
                     names.append(str(item["name"]))
     elif filename.endswith(".xlsx"):
-        wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+        try:
+            wb = openpyxl.load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+        except Exception:
+            raise HTTPException(status_code=422, detail="That file is not a valid .xlsx workbook.")
         ws = wb.active
-        for row in ws.iter_rows(values_only=True):
-            if row and row[0] and isinstance(row[0], str):
-                names.append(row[0].strip())
+        if ws is not None:
+            for row in ws.iter_rows(values_only=True):
+                if row and row[0] and isinstance(row[0], str):
+                    names.append(row[0].strip())
     else:
         raise HTTPException(status_code=422, detail="Only .json and .xlsx files are supported.")
 
@@ -72,7 +85,15 @@ async def bulk_upload_characters(
             existing_names.add(name)
             created += 1
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another request imported/created an overlapping name concurrently.
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Some of these characters were just added by someone else. Try again.",
+        )
     return BulkUploadResult(created=created, skipped=skipped)
 
 

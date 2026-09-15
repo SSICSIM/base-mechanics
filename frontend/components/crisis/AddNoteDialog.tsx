@@ -26,6 +26,7 @@ import type { NoteType, Priority } from "@/types/api";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  activePeriodId: number;
 }
 
 const EMPTY = {
@@ -37,7 +38,7 @@ const EMPTY = {
   note_type: "" as NoteType | "",
 };
 
-export function AddNoteDialog({ open, onOpenChange }: Props) {
+export function AddNoteDialog({ open, onOpenChange, activePeriodId }: Props) {
   const [form, setForm] = useState(EMPTY);
   const { data: characters } = useCharacters();
   const { mutate, isPending } = useCreateNote();
@@ -52,6 +53,7 @@ export function AddNoteDialog({ open, onOpenChange }: Props) {
     mutate(
       {
         character_id: Number(form.character_id),
+        period_id: activePeriodId,
         title: form.title,
         description: form.description,
         crisis_staff_notes: form.crisis_staff_notes || undefined,

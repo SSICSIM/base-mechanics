@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.crisis_note import NoteType, Priority
 
@@ -14,7 +14,7 @@ class HealthResponse(BaseModel):
 # ── Characters ──────────────────────────────────────────────────────────────
 
 class CharacterCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=255)
 
 
 class CharacterResponse(BaseModel):
@@ -28,7 +28,7 @@ class CharacterResponse(BaseModel):
 # ── Crisis Periods ───────────────────────────────────────────────────────────
 
 class CrisisPeriodCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=255)
 
 
 class CrisisPeriodResponse(BaseModel):
@@ -45,8 +45,13 @@ class CrisisPeriodResponse(BaseModel):
 
 class CrisisNoteCreate(BaseModel):
     character_id: int
-    title: str
-    description: str
+    # Optional: lets the client assert which period it expects the note to
+    # land in, so create_note can reject a stale submission (see there) if
+    # the active period has since changed. Omit to just use whatever period
+    # is currently active.
+    period_id: int | None = None
+    title: str = Field(min_length=1, max_length=512)
+    description: str = Field(min_length=1)
     crisis_staff_notes: str | None = None
     priority: Priority
     note_type: NoteType
@@ -54,8 +59,8 @@ class CrisisNoteCreate(BaseModel):
 
 class CrisisNoteUpdate(BaseModel):
     character_id: int | None = None
-    title: str | None = None
-    description: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=512)
+    description: str | None = Field(default=None, min_length=1)
     crisis_staff_notes: str | None = None
     priority: Priority | None = None
     note_type: NoteType | None = None
@@ -78,13 +83,13 @@ class CrisisNoteResponse(BaseModel):
 # ── Staff Notes ───────────────────────────────────────────────────────────────
 
 class StaffNoteCreate(BaseModel):
-    title: str
-    content: str
+    title: str = Field(min_length=1, max_length=512)
+    content: str = Field(min_length=1)
 
 
 class StaffNoteUpdate(BaseModel):
-    title: str | None = None
-    content: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=512)
+    content: str | None = Field(default=None, min_length=1)
 
 
 class StaffNoteResponse(BaseModel):

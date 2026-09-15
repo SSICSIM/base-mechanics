@@ -1,8 +1,6 @@
 import { apiClient } from "@/lib/apiClient";
 import type { BulkUploadResult, CharacterCreate, CharacterResponse } from "@/types/api";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
-
 export const charactersService = {
   list: () => apiClient.get<CharacterResponse[]>("/api/characters"),
   create: (body: CharacterCreate) => apiClient.post<CharacterResponse>("/api/characters", body),
@@ -11,7 +9,8 @@ export const charactersService = {
   bulkUpload: async (file: File): Promise<BulkUploadResult> => {
     const form = new FormData();
     form.append("file", file);
-    const res = await fetch(`${baseUrl}/api/characters/bulk`, {
+    // Same-origin proxy route (see apiClient.ts) — not the backend directly.
+    const res = await fetch("/api/backend/api/characters/bulk", {
       method: "POST",
       body: form,
     });

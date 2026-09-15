@@ -24,4 +24,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
     maxAge: 365 * 24 * 60 * 60, // 1 year — stays logged in
   },
+  // NEXTAUTH_URL alone does not set Auth.js's trustHost flag (only AUTH_URL /
+  // AUTH_TRUST_HOST / VERCEL / CF_PAGES do), so a production build would
+  // otherwise reject every request with UntrustedHost. This app is always
+  // deployed behind infrastructure we control, so trusting the request host
+  // is safe here.
+  trustHost: true,
 });

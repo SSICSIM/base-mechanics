@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, text
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -38,6 +38,17 @@ class Character(Base):
 
 class CrisisPeriod(Base):
     __tablename__ = "crisis_periods"
+    __table_args__ = (
+        # Postgres partial unique index: at most one row can have is_active
+        # true at a time. Makes "only one active period" a DB-level
+        # guarantee instead of a check-then-insert race in the API layer.
+        Index(
+            "ix_crisis_periods_one_active",
+            "is_active",
+            unique=True,
+            postgresql_where=text("is_active"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)

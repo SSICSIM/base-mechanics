@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -24,9 +24,22 @@ interface Props {
 
 export function AnalyticsTab({ defaultPeriodId }: Props) {
   const { data: periods, isLoading: loadingPeriods } = usePeriods();
-  const [selected, setSelected] = useState<string>(
-    defaultPeriodId ? String(defaultPeriodId) : ALL_PERIODS
-  );
+  const [selected, setSelected] = useState<string>(ALL_PERIODS);
+
+  // defaultPeriodId isn't known on first render (the active-period query is
+  // still loading), so auto-select it once it arrives — but only until the
+  // user picks something themselves.
+  const userPickedRef = useRef(false);
+  useEffect(() => {
+    if (!userPickedRef.current && defaultPeriodId) {
+      setSelected(String(defaultPeriodId));
+    }
+  }, [defaultPeriodId]);
+
+  function handleSelect(value: string) {
+    userPickedRef.current = true;
+    setSelected(value);
+  }
 
   // null = all periods, number = specific period, undefined = nothing selected yet
   const periodId: number | null = selected === ALL_PERIODS ? null : Number(selected);
@@ -40,7 +53,7 @@ export function AnalyticsTab({ defaultPeriodId }: Props) {
         {loadingPeriods ? (
           <Skeleton className="h-8 w-48" />
         ) : (
-          <Select value={selected} onValueChange={setSelected}>
+          <Select value={selected} onValueChange={handleSelect}>
             <SelectTrigger className="h-8 w-56">
               <SelectValue />
             </SelectTrigger>

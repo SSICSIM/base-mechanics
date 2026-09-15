@@ -20,7 +20,7 @@ export default function LoginPage() {
       password,
       redirect: false,
     });
-    if (result?.ok) {
+    if (result?.ok && !result?.error) {
       window.location.href = "/";
     } else {
       setError(true);

@@ -55,6 +55,7 @@ export function StaffNotesPanel({ periodId, readOnly = false }: Props) {
   }
 
   function saveEdit(id: number) {
+    if (!editTitle.trim() || !editContent.trim()) return;
     update(
       { id, body: { title: editTitle.trim(), content: editContent.trim() } },
       { onSuccess: () => setEditingId(null) }
@@ -138,7 +139,11 @@ export function StaffNotesPanel({ periodId, readOnly = false }: Props) {
                   onChange={(e) => setEditContent(e.target.value)}
                 />
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={() => saveEdit(note.id)}>
+                  <Button
+                    size="sm"
+                    disabled={!editTitle.trim() || !editContent.trim()}
+                    onClick={() => saveEdit(note.id)}
+                  >
                     <Check className="mr-1 h-3.5 w-3.5" />
                     Save
                   </Button>
